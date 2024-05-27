@@ -16,9 +16,13 @@
 #include "defs.h"
 
 // Make sure to enter the appropriate info in arduino_secrets.h
-char ssid[] = SECRET_SSID;    // network SSID
-char pass[] = SECRET_PASS;    // network password (use for WPA, or use as key for WEP)
-Vec3 llaRef = {SECRET_LAT,SECRET_LON,0}; // Pedestal Lat/Lon
+char * ssid = NULL;
+char * pass = NULL;
+char ssid1[] = "TJ1";    // network SSID
+char pass1[] = "rileyhall1";    // network password (use for WPA, or use as key for WEP) 
+char ssid2[] = "WPSGuest";    // network SSID
+char pass2[] = "";    // network password (use for WPA, or use as key for WEP) 
+Vec3 llaRef = {42.53598940025664, -71.14035084369107,42}; // Pedestal Lat/Lon/Altitude(meters)
 
 
 // Wrapper Structs
@@ -42,12 +46,16 @@ void setup() {
     delay(250);
     while (!Serial && WAIT_FOR_SERIAL) {}
 
+    Serial.println("Starting ISS Tracker");
+
     /* Initialise the display */
     delay(250); // wait for the OLED to power up
     if (!display.begin(0x3C, true)) {  // Address 0x3C default
       Serial.println("No display detected");
       while (CHECK_DISPLAY_CONNECTION) delay(10);
     }
+
+    Serial.println("Do Display");
 
     // Show image buffer on the display hardware.
     // Since the buffer is intialized with an Adafruit splashscreen
@@ -56,6 +64,10 @@ void setup() {
     delay(1000);
     display.setRotation(1);
     resetDisplay(0,0,1);
+    display.println("Starting ISS Tracker");
+    display.display();
+
+    Serial.println("Starting Ped");
 
     // Initialize pedestal wrapper
     ped.begin();
@@ -91,6 +103,8 @@ void setup() {
     // Reset stepper step count to zero to establish current step count as zero azimuth
     ped.stepper.setCurrentPosition(0);
     
+    Serial.println("Starting WIFI");
+
     // check for the WiFi module:
     WiFi.setPins(SPIWIFI_SS, SPIWIFI_ACK, ESP32_RESETN, ESP32_GPIO0, &SPIWIFI);
     while (WiFi.status() == WL_NO_MODULE) {
@@ -108,7 +122,41 @@ void setup() {
 
     // List visible Wifi Networks
     Serial.println("Scanning available networks...");
-    listNetworks();
+    int numSsid = listNetworks();
+
+    for( int i=0; i < numSsid; ++i )
+    {
+      if( strcmp(ssid1, WiFi.SSID(i)) == 0 )
+      {
+        ssid = ssid1;
+        pass = pass1;
+        Serial.println("Found ssid1");
+      }
+      else if( strcmp(ssid2, WiFi.SSID(i)) == 0 )
+      {
+        ssid = ssid2;
+        pass = pass2;
+        Serial.println("Found ssid2");
+      }
+    }
+
+    if( !ssid )
+    {
+      do
+      {
+        Serial.print("Unable to find valid SSID: ");
+        Serial.print(ssid1);
+        Serial.print(", ");
+        Serial.println(ssid2);
+        display.print("Unable to find valid SSID: ");
+        display.print(ssid1);
+        display.print(", ");
+        display.println(ssid2);
+        display.display();
+        delay(10000);
+
+      } while(true);
+    }
 
     // Attempt to connect to Wifi network:
     resetDisplay(0,10,1);
@@ -121,6 +169,8 @@ void setup() {
     // Connect to WPA/WPA2 network
     do {
         wifiStatus = WiFi.begin(ssid, pass);
+        Serial.print("Wifi Status: ");
+        Serial.println(wifiStatus);
         delay(10000);     // wait until connection is ready!
     } while (wifiStatus != WL_CONNECTED);
 

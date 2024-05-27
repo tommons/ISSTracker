@@ -94,7 +94,8 @@ int read3LE(char* buff, char* line1, char* line2) {
 // Connect to Celestrak and send query for the latest ISS 3LE
 void TleQueryHandler::sendQuery() {
     if (client.connect(SERVER, 80)) {
-        Serial.println("connected to server");
+        Serial.print("TLEQuery connected to server: ");
+        Serial.println(SERVER);
         // Make a HTTP request:
         client.print("GET "); client.print(QUERY); client.println(" HTTP/1.1");
 
@@ -102,22 +103,41 @@ void TleQueryHandler::sendQuery() {
         client.println("Connection: close");
         client.println();
     }
+    rcvBytes = 0; //reset rcvBytes
+    rcvTryCount = 0;
 }
 
 // Read received characters into a buffer and return true when we have received everything
 bool TleQueryHandler::rcvData() {
-    if (!client.connected()){
+  Serial.println("TLE rcvData");
+
+    if (!client.connected() || rcvTryCount > 100){
         Serial.println();
         Serial.println("disconnecting from server.");
         client.stop();
         rcvBytes = 0;
         return true; 
     }
+
     while (client.available()) {
         char c = client.read();
         rcvBuffer[rcvBytes]=c;
         rcvBytes++;
+        rcvTryCount = 0;
     }
+
+    if( rcvBytes > 0 )
+    {
+        #if DO_PRINT_DEBUG
+        Serial.print("TLE rcvData buffer: ");
+        Serial.print(rcvBytes);
+        Serial.print(" buf: ");
+        Serial.println(rcvBuffer);
+        #endif
+
+        rcvTryCount++;
+    }
+
     return false;
 }
 
@@ -171,7 +191,7 @@ void printEncryptionType(int thisType) {
 
 // List all visible Wifi Networks
 // Note that the Adafruit WiFi Co-Processor can only connect to 2.4 GHz networks
-void listNetworks() {
+int listNetworks() {
     // scan for nearby networks:
     Serial.println("** Scan Networks **");
     int numSsid = WiFi.scanNetworks();
@@ -186,6 +206,7 @@ void listNetworks() {
 
     // print the network number and name for each network found:
     for (int thisNet = 0; thisNet < numSsid; thisNet++) {
+
         Serial.print(thisNet);
         Serial.print(") ");
         Serial.print(WiFi.SSID(thisNet));
@@ -195,4 +216,6 @@ void listNetworks() {
         Serial.print("\tEncryption: ");
         printEncryptionType(WiFi.encryptionType(thisNet));
     }
+
+    return numSsid;
 }

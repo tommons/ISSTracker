@@ -16,7 +16,7 @@ const unsigned long seventyYears = 2208988800UL;
 const unsigned int localPort = 2390;      // local port to listen for UDP packets
 
 void printEncryptionType(int thisType);
-void listNetworks();
+int listNetworks();
 
 int read3LE(char* buff, char* line1, char* line2);
 
@@ -39,6 +39,7 @@ struct TleQueryHandler {
 
     char rcvBuffer[MAX_BUFFER];
     uint32_t rcvBytes;
+    uint32_t rcvTryCount;
 
     char line1[TLE_LEN];
     char line2[TLE_LEN];

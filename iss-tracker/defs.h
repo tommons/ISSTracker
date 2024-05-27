@@ -29,11 +29,11 @@
 #define CHECK_DISPLAY_CONNECTION    false
 #define CHECK_COMPASS_CONNECTION    false
 #define WAIT_FOR_SERIAL             false
-#define DO_PRINT_DEBUG              false
+#define DO_PRINT_DEBUG              true
 
 // If set true, will not attempt to automatically point north at startup
 // Assumes that pedestal is manually pointed north before startup
-#define DO_BYPASS_COMPASS           false
+#define DO_BYPASS_COMPASS           true
 
 #define MAG_NORTH_LAT           86.494
 #define MAG_NORTH_LON           162.867
@@ -54,8 +54,9 @@
 #define SERVO_MAX_PWM 2500
 
 // Timezone used for time display
+ const int timeZone = 0;   // Central European Time
 // const int timeZone = 1;   // Central European Time
-const int timeZone = -5;  // Eastern Standard Time (USA)
+//const int timeZone = -5;  // Eastern Standard Time (USA)
 // const int timeZone = -4;  // Eastern Daylight Time (USA)
 // const int timeZone = -8;  // Pacific Standard Time (USA)
 // const int timeZone = -7;  // Pacific Daylight Time (USA)

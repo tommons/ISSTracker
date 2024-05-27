@@ -24,6 +24,11 @@ void Pedestal::begin() {
     stepper.setMaxSpeed(STEPPER_SPEED);
     stepper.setAcceleration(STEPPER_ACCEL);
     
+    Serial.println("Running stepper reset and move");
+    stepper.runToNewPosition(0);
+    stepper.move(5000);
+    while (stepper.distanceToGo() != 0) {stepper.run();}
+
     // Initialise the compass
     compass = Adafruit_MMC5603(12345);
     if (!DO_BYPASS_COMPASS and !compass.begin(MMC56X3_DEFAULT_ADDRESS, &Wire)) {
