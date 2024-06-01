@@ -47,7 +47,7 @@ void Pedestal::begin() {
     cal_y = 6.53;
     cal_z = 30.03;
 
-    if( true )
+    if( false )
     {
         cal_x = 0;
         cal_y = 0;
