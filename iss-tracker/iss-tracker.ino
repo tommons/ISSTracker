@@ -12,7 +12,7 @@
 #include "wifi_utils.h"
 #include "display_utils.h"
 #include "pedestal.h"
-
+#include "elapsedMillis.h"
 #include "defs.h"
 
 // Make sure to enter the appropriate info in arduino_secrets.h
@@ -70,6 +70,9 @@ void setup() {
     Serial.println("Starting Ped");
 
     // Initialize pedestal wrapper
+    resetDisplay(0,0,1);
+    display.printf("Compass Cal...");
+    display.display();
     ped.begin();
 
     // Test pointer elevation range
@@ -77,21 +80,45 @@ void setup() {
     // If any are significantly misaligned from expectation,
     // then you'll need to adjust the SERVO_MIN_PWM & SERVO_MAX_PWM
     // params in defs.h. Check the spec sheet for your micro-servo of choice
+
+    Serial.println("Point Elevation: -90");
+    resetDisplay(0,0,2);
+    display.printf("El: -90");
+    display.display();
+    ped.setElevation(0);
+    delay(2000);
+
+    Serial.println("Point Elevation: 90");
+    resetDisplay(0,0,2);
+    display.printf("El: +90");
+    display.display();
+    ped.setElevation(180);
+    delay(2000);
+
+    resetDisplay(0,0,2);
+    display.printf("El: 0");
+    display.display();
+    Serial.println("Point Elevation: 0");
     ped.setElevation(90);
-    delay(1000);
-    ped.servo.writeMicroseconds(SERVO_MIN_PWM);
-    delay(1000);
-    ped.servo.writeMicroseconds(SERVO_MAX_PWM);
-    delay(1000);
-    ped.setElevation(90);
+    delay(2000);
 
     // If using the compass to align northward, perform a few attempts at automatically pointing northward
     if (!DO_BYPASS_COMPASS) {
-        for (int i = 0; i < 3; ++i){
-            resetDisplay(0,0,2);
-            display.printf("Az: %0.1f\n",ped.getAverageHeading());
+        double az = ped.getAverageHeading();
+        uint8_t tryCount = 0;
+        // loop until we are close
+        double heading = 0;
+        double diff = 360;
+        while( fabs(diff) < 5 && tryCount < 100 )
+        {
+            resetDisplay(0,0,1);
+            az = ped.getAverageHeading();
+            display.printf("North Finding:\nAz Before Point: %0.1f\n", az);
             display.display();
-            ped.pointNorth();
+            diff = ped.pointToHeading(heading);
+            Serial.printf("Northing Finding Diff: %0.1f\n", diff);
+            tryCount++;
+            delay(10000);
         }
         resetDisplay(0,0,2);
         display.printf("Az: %0.1f\n",ped.getAverageHeading());
@@ -234,6 +261,7 @@ void setup() {
 }
 
 uint32_t currMillis, timeSinceNtpUpdate_ms, timeSinceTleUpdate_ms, timeSinceOrbitUpdate_ms;
+elapsedMillis repointTime = 0;
 
 void loop() {
     // Get current time
@@ -322,11 +350,15 @@ void loop() {
             Serial.printf("posLLA:  [%0.3f,%0.3f,%0.3f]\n",posLLA.x,posLLA.y,posLLA.z/1e3);
             Serial.printf("posNED:  [%0.3f,%0.3f,%0.3f]\n",posNED.x,posNED.y,posNED.z);
             Serial.printf("posAER:  [%0.3f,%0.3f,%0.3f]\n",posAER.x,posAER.y,posAER.z);
+            Serial.printf("curHeading: %0.3f\n", ped.getHeading());
         }
 
         // Update target azimuth only if reached current step target (to avoid interrupting smooth movement)
         if (ped.stepper.distanceToGo() == 0)
+        {
             ped.setTargetAz(posAER[0]);
+            Serial.printf("posAER: %0.3f curHeading: %0.3f\n", posAER[0], ped.getHeading());
+        }
         ped.setElevation(90+posAER[1]);
 
         // Display current date/time on screen

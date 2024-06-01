@@ -33,7 +33,7 @@
 
 // If set true, will not attempt to automatically point north at startup
 // Assumes that pedestal is manually pointed north before startup
-#define DO_BYPASS_COMPASS           true
+#define DO_BYPASS_COMPASS           false
 
 #define MAG_NORTH_LAT           86.494
 #define MAG_NORTH_LON           162.867
@@ -45,13 +45,13 @@
 #define ORBIT_REFRESH_DELAY_MS 500
 
 // Stepper Motor Specs
-#define STEPS_PER_REV (2038*4)
+#define STEPS_PER_REV ((2038*4) + 40)
 #define STEPPER_SPEED 500
 #define STEPPER_ACCEL 300
 
 // Servo PWM Range
-#define SERVO_MIN_PWM 500
-#define SERVO_MAX_PWM 2500
+#define SERVO_MIN_PWM 600
+#define SERVO_MAX_PWM 2300
 
 // Timezone used for time display
  const int timeZone = 0;   // Central European Time
