@@ -16,12 +16,22 @@
 #include "defs.h"
 
 // Make sure to enter the appropriate info in arduino_secrets.h
-char * ssid = NULL;
-char * pass = NULL;
-char ssid1[] = "TJ1";    // network SSID
-char pass1[] = "rileyhall1";    // network password (use for WPA, or use as key for WEP) 
-char ssid2[] = "WPSGuest";    // network SSID
-char pass2[] = "";    // network password (use for WPA, or use as key for WEP) 
+//char * ssid = NULL;
+//char * pass = NULL;
+//char ssid1[] = "TJ1";    // network SSID
+//char pass1[] = "rileyhall1";    // network password (use for WPA, or use as key for WEP) 
+//char ssid2[] = "WPSGuest";    // network SSID
+//char pass2[] = "";    // network password (use for WPA, or use as key for WEP) 
+
+uint8_t ssidCount = 5;
+//const char *ssids[] = { "WPS-Guest", "WMS-Guest", "WPSGuest", "WMSGuest", "TJ1" };
+//const char *passes[] = { "", "", "", "", "rileyhall1" };
+
+String ssid;
+String pass;
+String ssids[] = { "WPS-Guest", "WMS-Guest", "WPSGuest", "WMSGuest", "tj1" };
+String passes[] = { "", "", "", "", "rileyhall1" };
+
 Vec3 llaRef = {42.53598940025664, -71.14035084369107,42}; // Pedestal Lat/Lon/Altitude(meters)
 
 
@@ -109,7 +119,9 @@ void setup() {
         // loop until we are close
         double heading = 0;
         double diff = 360;
-        while( fabs(diff) < 5 && tryCount < 100 )
+        Serial.printf("North Finding Az Diff: %0.1f\n",fabs(diff));
+
+        while( fabs(diff) > 10 && tryCount < 100 )
         {
             resetDisplay(0,0,1);
             az = ped.getAverageHeading();
@@ -118,11 +130,12 @@ void setup() {
             diff = ped.pointToHeading(heading);
             Serial.printf("Northing Finding Diff: %0.1f\n", diff);
             tryCount++;
-            delay(10000);
+            delay(1000);
         }
         resetDisplay(0,0,2);
-        display.printf("Az: %0.1f\n",ped.getAverageHeading());
+        display.printf("North Finding Az: %0.1f\n",ped.getAverageHeading());
         display.display();
+        Serial.printf("North Finding Az: %0.1f\n",ped.getAverageHeading());
         delay(100);
     }
     
@@ -153,17 +166,21 @@ void setup() {
 
     for( int i=0; i < numSsid; ++i )
     {
-      if( strcmp(ssid1, WiFi.SSID(i)) == 0 )
+      for( int j=0; j < ssidCount; ++j )
       {
-        ssid = ssid1;
-        pass = pass1;
-        Serial.println("Found ssid1");
-      }
-      else if( strcmp(ssid2, WiFi.SSID(i)) == 0 )
-      {
-        ssid = ssid2;
-        pass = pass2;
-        Serial.println("Found ssid2");
+          Serial.print("Trying WifiSSID: ");
+          Serial.print(WiFi.SSID(i));
+          Serial.print("  SSID: ");
+          Serial.println(ssids[j]);
+          
+          //if( strcmpi( ssids[j], WiFi.SSID(i) ) )
+          if( ssids[j].equalsIgnoreCase(WiFi.SSID(i)) )
+          {
+            Serial.print("Found SSID Match: ");
+            Serial.println(WiFi.SSID(i));
+            ssid = WiFi.SSID(i);
+            pass = passes[j];
+          }
       }
     }
 
@@ -171,14 +188,9 @@ void setup() {
     {
       do
       {
-        Serial.print("Unable to find valid SSID: ");
-        Serial.print(ssid1);
-        Serial.print(", ");
-        Serial.println(ssid2);
-        display.print("Unable to find valid SSID: ");
-        display.print(ssid1);
-        display.print(", ");
-        display.println(ssid2);
+        Serial.println("Unable to find valid Wifi SSID");
+        resetDisplay(0,0,1);
+        display.println("Unable to find valid Wifi SSID");
         display.display();
         delay(10000);
 
@@ -195,7 +207,7 @@ void setup() {
 
     // Connect to WPA/WPA2 network
     do {
-        wifiStatus = WiFi.begin(ssid, pass);
+        wifiStatus = WiFi.begin(ssid.c_str(), pass.c_str());
         Serial.print("Wifi Status: ");
         Serial.println(wifiStatus);
         delay(10000);     // wait until connection is ready!
@@ -208,6 +220,7 @@ void setup() {
 
     // Start NTP connection
     ntp.begin();
+    resetDisplay(0,10,1);
     Serial.println("\nStarting connection to NTP server...");
     display.println("\nStarting connection to NTP server...");
     display.display();
@@ -289,7 +302,7 @@ void loop() {
         display.println("Wifi disconnected, attempting to reconnect...");
         display.display();
         do {
-            wifiStatus = WiFi.begin(ssid, pass);
+            wifiStatus = WiFi.begin(ssid.c_str(), pass.c_str());
             delay(10000);     // wait until connection is ready!
         } while (wifiStatus != WL_CONNECTED);
     }
