@@ -30,8 +30,11 @@ struct Pedestal {
     void setElevation(double el);
     void runStepper();
     double pointToHeading(double heading);
+    void pointToHeadingMag(double heading);
     double getHeading();
     double getAverageHeading();
     double getHeadingError( double targetAz, double currentAz );
+    bool getMagnet();
+    void findMagnet();
 
 };

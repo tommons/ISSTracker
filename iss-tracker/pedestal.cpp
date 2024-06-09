@@ -32,6 +32,9 @@ void Pedestal::begin() {
         while (CHECK_COMPASS_CONNECTION) delay(10);
     }
 
+    // Initalize the magnet sensor
+    pinMode( MAGNET_PIN, INPUT);
+
     // Calibrate the compass.  Do a full 360 spin
     Serial.println("Calibrating Compass");
     
@@ -165,6 +168,39 @@ double Pedestal::pointToHeading(double heading) {
     return error;
 }
 
+// Attempt to point pedestal northward based on average of multiple compass measurements
+void Pedestal::pointToHeadingMag(double heading) {
+    double currAz, relAz;
+    currAz = getAverageHeading(); // get heading of base
+    findMagnet(); // orient the pedestal to it's on top of the magnet
+    double pointerAz = fmod(currAz - POINTER_OFFSET_DEG + 360,360); // azimuth of pointer
+
+    relAz =  getHeadingError( heading, pointerAz );
+
+    Serial.printf("PointToHeadingMag Target Heading (deg): %0.3f\n", heading); 
+    Serial.printf("Current Heading (deg): %0.3f\n", pointerAz);
+    Serial.printf("Az To Move (deg) %0.3f\n", relAz);
+
+    stepper.move(deg2steps(relAz));
+    elapsedMillis sampleTime = 0;  
+    while (stepper.distanceToGo() != 0) 
+    {
+        // check where we are
+        if( 0 && sampleTime > 300 )
+        {
+          stepper.stop();
+          delay(1000);
+          double az = getAverageHeading();
+          double error =  getHeadingError( heading, az );
+          Serial.printf("Error check: az %0.1f err %0.1f\n", az, error);
+          sampleTime = 0;
+        }
+        stepper.run();
+    }
+
+    return;
+}
+
 double Pedestal::getHeadingError( double targetAz, double currentAz )
 {
     double error = targetAz - currentAz;
@@ -182,10 +218,8 @@ double Pedestal::getHeading() {
     // Get compass heading
     compass.getEvent(&compassEvent);
     double heading = atan2(compassEvent.magnetic.y - cal_y,compassEvent.magnetic.x - cal_x) * RAD_TO_DEG;
-    heading += 90; // offset for pointer direction vs compass direction
     heading = fmod(heading + 360.0, 360.0);
 
-    //Serial.printf("  getHeading %0.3f\n", heading);
     return heading;
 }
 
@@ -204,4 +238,47 @@ double Pedestal::getAverageHeading() {
     heading = fmod(heading + 360,360);
 
     return heading;
+}
+
+bool Pedestal::getMagnet()
+{
+  // digitalRead HIGH=no magnet, LOW=magnet found
+  return !digitalRead( MAGNET_PIN );
+}
+
+void Pedestal::findMagnet()
+{
+    elapsedMillis sampleTime = 0;  
+    bool foundMagnet = getMagnet();
+    
+    stepper.move(deg2steps(360*2));
+    while (stepper.distanceToGo() != 0 && foundMagnet == false) 
+    {
+        if( sampleTime > 50 )
+        {
+            foundMagnet = getMagnet();
+            if( foundMagnet )
+            {
+              Serial.printf("Found Magnet!\n");
+              stepper.stop();
+              delay(2000);
+              break;
+            }
+            sampleTime = 0;
+        }
+        if( !foundMagnet )
+        {
+          stepper.run();
+        }
+    }
+    
+    if( foundMagnet )
+    {
+      Serial.printf("Back it up!\n");
+      while( getMagnet() == false )
+      {
+         stepper.move(deg2steps(-5));
+         stepper.run();
+      }
+    }
 }

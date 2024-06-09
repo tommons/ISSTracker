@@ -11,6 +11,7 @@
 #define ESP32_GPIO0   -1
 
 #define SERVO_PIN 10
+#define MAGNET_PIN 12
 
 // Stepper pins
 #define STEP1 A3
@@ -38,6 +39,7 @@
 #define MAG_NORTH_LAT           86.494
 #define MAG_NORTH_LON           162.867
 #define TRUE_NORTH_OFFSET_DEG   -3.73
+#define POINTER_OFFSET_DEG      90
 
 // Refresh durations
 #define TIME_REFRESH_DELAY_MIN 10
@@ -50,7 +52,7 @@
 #define STEPPER_ACCEL 300
 
 // Servo PWM Range
-#define SERVO_MIN_PWM 600
+#define SERVO_MIN_PWM 700
 #define SERVO_MAX_PWM 2300
 
 // Timezone used for time display
